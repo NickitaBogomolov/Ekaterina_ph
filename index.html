@@ -8,6 +8,11 @@
     <meta name="description"
         content="Екатерина Евстропова — фотограф в Нижнем Новгороде. Портретные, событийные, уличные и творческие съёмки.">
     <title>Екатерина Евстропова — фотограф</title>
+
+    <!-- Предзагрузка критичных изображений (hero + портрет фотографа) -->
+    <link rel="preload" as="image" href="./img/main.jpg" fetchpriority="high">
+    <link rel="preload" as="image" href="./img/profile.jpg">
+
     <style>
         :root {
             --bg: #f8f7f4;
@@ -247,7 +252,6 @@
             width: 100%;
         }
 
-        /* Карточка-кнопка — одинаковая у всех */
         .gallery-item {
             position: relative;
             display: block;
@@ -270,7 +274,6 @@
             display: none;
         }
 
-        /* Изображение — одинаковый размер для всех */
         .gallery-item img {
             display: block;
             width: 100%;
@@ -284,7 +287,6 @@
             transform: scale(1.05);
         }
 
-        /* Подпись поверх фото */
         .gallery-label {
             position: absolute;
             left: 13px;
@@ -493,6 +495,70 @@
         :focus-visible {
             outline: 2px solid #a49179;
             outline-offset: 3px
+        }
+
+        /* ==================== ПРЕЛОАДЕР ==================== */
+        .preloader {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            background: var(--bg);
+            transition: opacity .6s ease, visibility .6s ease;
+        }
+
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .preloader-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+        }
+
+        .preloader-name {
+            font: 19px var(--serif);
+            letter-spacing: .02em;
+            color: var(--ink);
+            opacity: 0;
+            animation: preloaderFade 1.2s ease forwards;
+        }
+
+        .preloader-line {
+            position: relative;
+            width: 120px;
+            height: 1px;
+            background: var(--line);
+            overflow: hidden;
+        }
+
+        .preloader-line::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            transform: translateX(-100%);
+            animation: preloaderSlide 1.4s ease-in-out infinite;
+        }
+
+        @keyframes preloaderFade {
+            to { opacity: 1; }
+        }
+
+        @keyframes preloaderSlide {
+            0%   { transform: translateX(-100%); }
+            50%  { transform: translateX(0); }
+            100% { transform: translateX(100%); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .preloader-name { animation: none; opacity: 1; }
+            .preloader-line::after { animation: none; transform: none; }
         }
 
         /* ==================== АДАПТИВ ==================== */
@@ -711,6 +777,15 @@
 </head>
 
 <body>
+
+    <!-- ==================== ПРЕЛОАДЕР ==================== -->
+    <div class="preloader" id="preloader" aria-hidden="true">
+        <div class="preloader-inner">
+            <span class="preloader-name">Екатерина Евстропова</span>
+            <span class="preloader-line"></span>
+        </div>
+    </div>
+
     <header class="site-header">
         <div class="container header-inner"><a class="brand" href="#home"
                 aria-label="Екатерина Евстропова — на главную">Екатерина Евстропова</a><button class="menu-toggle"
@@ -933,10 +1008,108 @@
             class="lightbox-close" type="button" aria-label="Закрыть фотографию">×</button><img src="" alt="">
         <p class="lightbox-caption"></p>
     </div>
+
     <script>
-        const menuButton = document.querySelector('.menu-toggle'), nav = document.querySelector('.nav'); menuButton.addEventListener('click', () => { const open = menuButton.getAttribute('aria-expanded') === 'true'; menuButton.setAttribute('aria-expanded', String(!open)); menuButton.setAttribute('aria-label', open ? 'Открыть меню' : 'Закрыть меню'); nav.classList.toggle('open', !open) }); nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { nav.classList.remove('open'); menuButton.setAttribute('aria-expanded', 'false'); menuButton.setAttribute('aria-label', 'Открыть меню') }));
-        document.querySelectorAll('.filter-button').forEach(button => button.addEventListener('click', () => { const filter = button.dataset.filter; document.querySelectorAll('.filter-button').forEach(item => item.setAttribute('aria-pressed', String(item === button))); document.querySelectorAll('.gallery-item').forEach(item => { item.hidden = filter !== 'all' && item.dataset.category !== filter }) }));
-        const lightbox = document.querySelector('#lightbox'), lbImage = lightbox.querySelector('img'), lbCaption = lightbox.querySelector('.lightbox-caption'); const closeLightbox = () => { lightbox.classList.remove('open'); document.body.classList.remove('locked'); lbImage.src = '' }; document.querySelectorAll('.gallery-item').forEach(item => item.addEventListener('click', () => { const img = item.querySelector('img'); lbImage.src = img.currentSrc || img.src; lbImage.alt = img.alt; lbCaption.textContent = item.dataset.caption; lightbox.classList.add('open'); document.body.classList.add('locked'); lightbox.querySelector('.lightbox-close').focus() })); lightbox.querySelector('.lightbox-close').addEventListener('click', closeLightbox); lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox() }); document.addEventListener('keydown', e => { if (e.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox() }); document.querySelector('#year').textContent = new Date().getFullYear();
+        /* ==================== МЕНЮ ==================== */
+        const menuButton = document.querySelector('.menu-toggle'), nav = document.querySelector('.nav');
+        menuButton.addEventListener('click', () => {
+            const open = menuButton.getAttribute('aria-expanded') === 'true';
+            menuButton.setAttribute('aria-expanded', String(!open));
+            menuButton.setAttribute('aria-label', open ? 'Открыть меню' : 'Закрыть меню');
+            nav.classList.toggle('open', !open);
+        });
+        nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+            nav.classList.remove('open');
+            menuButton.setAttribute('aria-expanded', 'false');
+            menuButton.setAttribute('aria-label', 'Открыть меню');
+        }));
+
+        /* ==================== ФИЛЬТРЫ ==================== */
+        document.querySelectorAll('.filter-button').forEach(button => button.addEventListener('click', () => {
+            const filter = button.dataset.filter;
+            document.querySelectorAll('.filter-button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+            document.querySelectorAll('.gallery-item').forEach(item => {
+                item.hidden = filter !== 'all' && item.dataset.category !== filter;
+            });
+        }));
+
+        /* ==================== ЛАЙТБОКС ==================== */
+        const lightbox = document.querySelector('#lightbox'),
+              lbImage = lightbox.querySelector('img'),
+              lbCaption = lightbox.querySelector('.lightbox-caption');
+
+        const closeLightbox = () => {
+            lightbox.classList.remove('open');
+            document.body.classList.remove('locked');
+            lbImage.src = '';
+        };
+
+        document.querySelectorAll('.gallery-item').forEach(item => item.addEventListener('click', () => {
+            const img = item.querySelector('img');
+            lbImage.src = img.currentSrc || img.src;
+            lbImage.alt = img.alt;
+            lbCaption.textContent = item.dataset.caption;
+            lightbox.classList.add('open');
+            document.body.classList.add('locked');
+            lightbox.querySelector('.lightbox-close').focus();
+        }));
+
+        lightbox.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+        lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox();
+        });
+
+        /* ==================== ГОД ==================== */
+        document.querySelector('#year').textContent = new Date().getFullYear();
+
+        /* ==================== ПРЕЛОАДЕР ==================== */
+        (() => {
+            const preloader = document.getElementById('preloader');
+            if (!preloader) return;
+
+            // Не показываем повторно в рамках одной сессии
+            if (sessionStorage.getItem('preloaderShown')) {
+                preloader.remove();
+                return;
+            }
+
+            const MIN_TIME = 600;    // минимум, чтобы не мелькал
+            const MAX_TIME = 4000;   // страховка: не держим дольше
+            const start = performance.now();
+            let finished = false;
+
+            const hide = () => {
+                if (finished) return;
+                finished = true;
+                const elapsed = performance.now() - start;
+                const wait = Math.max(0, MIN_TIME - elapsed);
+                setTimeout(() => {
+                    preloader.classList.add('hidden');
+                    sessionStorage.setItem('preloaderShown', '1');
+                    preloader.addEventListener('transitionend', () => preloader.remove(), { once: true });
+                }, wait);
+            };
+
+            // Ждём загрузку всех «критичных» изображений (без loading="lazy")
+            const criticalImages = Array.from(document.images).filter(img => img.loading !== 'lazy');
+            const promises = criticalImages.map(img =>
+                img.complete
+                    ? Promise.resolve()
+                    : new Promise(res => {
+                        img.addEventListener('load', res, { once: true });
+                        img.addEventListener('error', res, { once: true });
+                    })
+            );
+
+            Promise.race([
+                Promise.all(promises),
+                new Promise(res => setTimeout(res, MAX_TIME))
+            ]).then(hide);
+
+            // Дополнительная страховка на полную загрузку окна
+            window.addEventListener('load', hide, { once: true });
+        })();
     </script>
 </body>
 
